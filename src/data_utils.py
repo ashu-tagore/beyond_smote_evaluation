@@ -384,6 +384,44 @@ def retrieve_processed_datasets(file_prefix="higgs"):
 
     return train_x, test_x, train_y, test_y
 
+def load_resampled_data(method_name, data_dir=None, file_prefix='higgs'):
+    """
+    Loading resampled dataset from disk
+    
+    Args:
+        method_name: Name of resampling method
+        data_dir: Directory containing resampled data
+        file_prefix: Prefix of saved filename
+    
+    Returns:
+        features: Feature DataFrame
+        labels: Target Series
+    """
+    
+    if data_dir is None:
+        data_dir = RESAMPLED_DIR
+    
+    # Constructing filename
+    filename = f"{file_prefix}_{method_name}_resampled.csv"
+    file_path = Path(data_dir) / filename
+    
+    print(f"Loading resampled data: {method_name}")
+    
+    if not file_path.exists():
+        raise FileNotFoundError(f"Resampled dataset not found: {file_path}")
+    
+    # Reading CSV
+    dataset = pd.read_csv(file_path)
+    
+    # Separating features and target
+    features = dataset[ALL_FEATURES]
+    labels = dataset[TARGET_COL]
+    
+    print(f"  Loaded {len(features):,} samples")
+    print(f"  Features shape: {features.shape}")
+    
+    return features, labels
+
 
 if __name__ == "__main__":
     print("=" * 70)
