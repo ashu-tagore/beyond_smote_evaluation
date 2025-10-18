@@ -258,12 +258,12 @@ def train_pytorch_model(model, train_loader, val_loader, epochs=None,
     device = torch.device(device)
     model = model.to(device)
 
-    # Defining loss function
+    # Defining loss function with correct reduction for weighted loss
     if pos_weight is not None:
         pos_weight = pos_weight.to(device)
-        criterion = nn.BCELoss(weight=None)  # Will apply pos_weight manually
+        criterion = nn.BCELoss(reduction='none')  # Use 'none' to get per-sample losses
     else:
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss()  # Default reduction='mean' is fine for unweighted
 
     # Defining optimizer
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -303,15 +303,16 @@ def train_pytorch_model(model, train_loader, val_loader, epochs=None,
             # Forward pass
             outputs = model(batch_X)
 
-            # Computing loss
+            # Computing loss with correct handling for weighted case
             if pos_weight is not None:
-                # Applying positive weight manually
+                # Get per-sample losses (shape: [batch_size, 1])
                 loss = criterion(outputs, batch_y)
+                # Apply positive weight to minority class samples
                 weights = torch.where(batch_y == 1, pos_weight,
                                     torch.ones_like(batch_y))
-                loss = (loss * weights).mean()
+                loss = (loss * weights).mean()  # ✅ Now this works correctly
             else:
-                loss = criterion(outputs, batch_y)
+                loss = criterion(outputs, batch_y)  # Already returns mean
 
             # Backward pass and optimization
             loss.backward()
@@ -342,7 +343,7 @@ def train_pytorch_model(model, train_loader, val_loader, epochs=None,
                 # Forward pass
                 outputs = model(batch_X)
 
-                # Computing loss
+                # Computing validation loss with same handling
                 if pos_weight is not None:
                     loss = criterion(outputs, batch_y)
                     weights = torch.where(batch_y == 1, pos_weight,
@@ -615,4 +616,13 @@ if __name__ == "__main__":
     model_wl = WeightedLossClassifier(input_dim=n_features)
     print("Weighted loss model created")
 
-    print("\nALL TESTS COMPLETED SUCCESSFULLY")
+    print("\nTest 7: Training with weighted loss (CRITICAL TEST)...")
+    trained_weighted, history_weighted = train_pytorch_model(
+        model_wl, train_loader_test, val_loader_test,
+        epochs=5, pos_weight=pos_weight_test, patience=3, verbose=True
+    )
+    print("Weighted loss training completed successfully!")
+
+    print("\n" + "="*70)
+    print("All tests completed successfully")
+    print("="*70)
