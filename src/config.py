@@ -4,6 +4,7 @@ Purpose: Defining all project constants, paths, and hyperparameters
 """
 
 import os
+import torch
 from pathlib import Path
 
 # PATH CONFIGURATION
@@ -140,7 +141,7 @@ DL_CONFIG = {
     'batch_count': 512,
     'epoch_count': 50,
     'patience': 5,
-    'compute_device': 'cpu'
+    'compute_device': 'cuda' if torch.cuda.is_available() else 'cpu'
 }
 
 # RESAMPLING TECHNIQUE PARAMETERS
